@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<plim-plim version="0.1" author="lepreshawn@gmail.com">
+ <show>
+  <showname>A Grande Família</showname>
+  <searchstring>A Grande Família</searchstring>
+  <searchfilters>tipomidia:íntegra,programa:a grande família</searchfilters>
+  <downloadm3u>.\..\media\Grande Família</downloadm3u>
+  <downloadmovies>as</downloadmovies>
+  <maximumepisodes>10</maximumepisodes>
+ </show>
+ <show>
+  <showname>Fantástico</showname>
+  <searchstring>Asas</searchstring>
+  <searchfilters>tipomidia:íntegra,programa:fantástico</searchfilters>
+  <downloadm3u>.\..\media\Fantástico</downloadm3u>
+  <daownloadmovies>asa</daownloadmovies>
+  <maximumepisodes>0</maximumepisodes>
+ </show>
+</plim-plim>
+<!-->
+
+f=
+macrotema:entretenimento
+macrotema:notícias
+macrotema:esportes
+
+controleacesso:aberto
+controleacesso:fechado
+
+tipomidia:vídeo on demand
+tipomidia:íntegra
+
+temas:dramaturgia
+temas:cenas cômicas
+
+programa:a grande família
+programa:vídeo show
+<!-->
