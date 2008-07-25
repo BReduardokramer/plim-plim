@@ -16,6 +16,7 @@ class GloboFetchVideos():
         self.fetchInput()
         self.checkInput()
         self.checkDirectories()      
+        self.checkLastEpisodesDownloaded()
         
     #----------------------------------------------------------------------
     def writeLog(self, logstr,type):
@@ -148,14 +149,8 @@ class GloboFetchVideos():
         
         for elem in self.inputtree.getroot().getiterator(globals.EL_DLM3U):
             path=elem.text.encode(globals.ENC_LOCAL)
-            
-            status=os.stat(path)
-            tmp=status.st_mode
-            #check if path is a directory
-            if os.path.isdir(path):
-                #then check if it is writeable
-                print path
-            else:
+           #check if path is a directory
+            if not os.path.isdir(path):
                 try:
                     os.makedirs(path)
                     self.writeLog('checking directories: non-existing directory \''+path+'\' created.','message')
@@ -174,33 +169,54 @@ class GloboFetchVideos():
                 except Exception, ex:
                     self.writeLog('checking directories: not able to create directory \''+path+'\' created.','error')
                     exit()
-            
+                    
+
+    #----------------------------------------------------------------------
+    def checkLastEpisodesDownloaded(self):
+        """For each show, finds the id (globo.com video id) of last episode existing in the download 
+        directory. This id is inserted as sub element of the show elements in self.inputtree to be 
+        used later"""
+        #Iterationg per show
+        for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):
+            #Finding occurrence of any download element
+            for download_element in globals.ELS_DOWNLOAD:
+                #if download element is found
+                if show.find(download_element)<>None:         
+                    #get directory listing of directory described by download_element
+                    dir=os.listdir(show.find(download_element).text.encode(globals.ENC_LOCAL))
+                    #match object for the file matching for this download_element 
+                    reg=re.compile(globals.FILE_MATCHING[download_element],re.IGNORECASE)
+                    idlist=[]
+                    #for each entry in the dir listing, matches the file matching
+                    #matching is looking for 6-digit string (see exact matching on globals.FILE_MATCHING)
+                    for elem in dir:
+                        match=reg.findall(elem)
+                        #'match' is a list (check globals.FILE_MATCHING, grouping). If something is matched
+                        if len(match): 
+                            #then id is the first element of 'match'. It is stored in idlist
+                            idlist.append(match[0])
+                    #sort the list of ids, and store the last as subelement to the show element
+                    if len(idlist):
+                        idlist.sort()
+                        ET.SubElement(show,download_element+'_last').text=str(idlist[-1])
+                                        
+    #----------------------------------------------------------------------
+    def fetchShowIndexes(self):
+        """Fecthes the index of matching episodes for each shown in self.inputtree"""
         
-    
-                    
-                    
-                    
-########################################################################  
-
-
-"""
-        iterator=self.inputtree.getroot().getiterator('show')
-        for show in iterator:
-            searchstr=show.find(globals.EL_SEARCHSTR).text
-            searchfilters=show.find(globals.EL_SEARCHFILTER).text
-            #Preparing a dictionary for being urlencoded as query string
-            dict={\
-                '1':'1',\
-                'novaBusca':'1',\
-                'b':searchstr.encode(globals.GLOBOENCODING),\
-                'f':searchfilters.encode(globals.GLOBOENCODING),\
-                'o':'1'\
-                }
+        for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):          
+            #Pass the input searchstring and searchfilters into the search query dictionary
+            globals.SEARCH_QUERY[globals.SEARCHFILTERKEY]=show.find(globals.EL_SEARCHFILTER).text
+            globals.SEARCH_QUERY[globals.SEARCHSTRKEY]=show.find(globals.EL_SEARCHSTR).text
             query=urllib.urlencode(dict)
             #insert final query string as an aditional element <querystr> in the Element Tree
             searchquery=ET.SubElement(show,'querystr').text=globals.SEARCH_ENGINE+query            
 
-"""
+                       
+                    
+                    
+                    
+########################################################################  
 
             
 if __name__ == "__main__":

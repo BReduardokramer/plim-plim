@@ -111,4 +111,6 @@ ELS_ALLOWED.extend(ELS_MANDATORY)
 ELS_ALLOWED.extend(ELS_DOWNLOAD)
 ELS_ALLOWED.extend(ELS_OPTIONAL)
 
+FILE_MATCHING={EL_DLM3U:'(\d{6}).m3u$',\
+               EL_DLMOVIES:'(\d{6})\s{1}\d{2}.flv$'}
 

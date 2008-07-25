@@ -4,7 +4,7 @@
   <showname>A Grande Família</showname>
   <searchstring>A Grande Família</searchstring>
   <searchfilters>tipomidia:íntegra,programa:a grande família</searchfilters>
-  <downloadmovies>E:\Mymedia\Grande Família Movies</downloadmovies>
+  <downloadmovies>.\..\media\Grande FamíliaMovies</downloadmovies>
   <downloadm3u>.\..\media\Grande Família</downloadm3u>
   <maximumepisodes>10</maximumepisodes>
  </show>
