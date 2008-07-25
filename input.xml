@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<plim-plim version="0.1" author="lepreshawn@gmail.com">
+<plim-plim author="lepreshawn@gmail.com">
  <show>
   <showname>A Grande Família</showname>
   <searchstring>A Grande Família</searchstring>
   <searchfilters>tipomidia:íntegra,programa:a grande família</searchfilters>
+  <downloadmovies>E:\Mymedia\Grande Família Movies</downloadmovies>
   <downloadm3u>.\..\media\Grande Família</downloadm3u>
-  <downloadmovies>as</downloadmovies>
   <maximumepisodes>10</maximumepisodes>
  </show>
  <show>
@@ -13,10 +13,12 @@
   <searchstring>Asas</searchstring>
   <searchfilters>tipomidia:íntegra,programa:fantástico</searchfilters>
   <downloadm3u>.\..\media\Fantástico</downloadm3u>
-  <daownloadmovies>asa</daownloadmovies>
+  <downloadmovies>.\..\media\FantásticoMovies</downloadmovies>
   <maximumepisodes>0</maximumepisodes>
  </show>
 </plim-plim>
+
+
 <!-->
 
 f=

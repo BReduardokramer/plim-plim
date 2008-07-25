@@ -20,9 +20,9 @@ INPUT_FILE           = 'input.xml'
 ##############################################
 # Encoding Settings
 #Encoding for input/output XML files
-XMLENCODING          = 'iso-8859-1' 
+ENC_LOCAL     = 'iso-8859-1' 
 #Encoding for interfacing with Globo's search engines
-GLOBOENCODING        = 'utf-8'
+ENC_UTF       = 'utf-8'
 
 ##############################################
 # Globo HTTP Parameters and URLs
@@ -69,5 +69,46 @@ SEARCH_HEADERS = {'Content-type': 'application/x-www-form-urlencoded',\
                  'Keep-Alive':' 300',\
                  'Connection':' keep-alive'}
 
+#Dictionary for search queries. Empty values are filled in in run-time with show information read from input file
+NEWSEARCHKEY='novaBusca'
+SEARCHSTRKEY='b'
+SEARCHFILTERKEY='b'
+ORDERKEY='o'
+SEARCH_QUERY = {'1':'1',\
+                NEWSEARCHKEY:'1',\
+                SEARCHSTRKEY:'',\
+                SEARCHFILTERKEY:'',\
+                ORDERKEY:'1'}
+#base URL of the SearchEngine
 SEARCH_ENGINE = 'http://playervideo.globo.com/webmedia/GMCBusca?'
+
+
+##############################################
+# Definitions for input file elements
+EL_SHOWNAME='showname'
+EL_SEARCHSTR='searchstring'
+EL_SEARCHFILTER='searchfilters'
+EL_DLM3U='downloadm3u'
+EL_DLMOVIES='downloadmovies'
+EL_ROOT='plim-plim'
+EL_SHOW='show'
+EL_MAXEPISODES='maximumepisodes'
+
+ELS_MANDATORY=[]
+ELS_MANDATORY.append(EL_SHOWNAME)
+ELS_MANDATORY.append(EL_SEARCHFILTER)
+ELS_MANDATORY.append(EL_SEARCHSTR)
+
+ELS_DOWNLOAD=[]
+ELS_DOWNLOAD.append(EL_DLM3U)
+ELS_DOWNLOAD.append(EL_DLMOVIES)
+
+ELS_OPTIONAL=[]
+ELS_OPTIONAL.append(EL_MAXEPISODES)
+
+ELS_ALLOWED=[EL_ROOT, EL_SHOW]
+ELS_ALLOWED.extend(ELS_MANDATORY)
+ELS_ALLOWED.extend(ELS_DOWNLOAD)
+ELS_ALLOWED.extend(ELS_OPTIONAL)
+
 
