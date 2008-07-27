@@ -16,7 +16,7 @@ class GloboFetchVideos():
         self.fetchInput()
         self.checkInput()
         self.checkDirectories()      
-        self.checkLastEpisodesDownloaded()
+        self.checkLastDownloads()
         
     #----------------------------------------------------------------------
     def writeLog(self, logstr,type):
@@ -172,7 +172,7 @@ class GloboFetchVideos():
                     
 
     #----------------------------------------------------------------------
-    def checkLastEpisodesDownloaded(self):
+    def checkLastDownloads(self):
         """For each show, finds the id (globo.com video id) of last episode existing in the download 
         directory. This id is inserted as sub element of the show elements in self.inputtree to be 
         used later"""
@@ -206,24 +206,53 @@ class GloboFetchVideos():
         
         for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):          
             #Pass the input searchstring and searchfilters into the search query dictionary
-            globals.SEARCH_QUERY[globals.SEARCHFILTERKEY]=show.find(globals.EL_SEARCHFILTER).text
-            globals.SEARCH_QUERY[globals.SEARCHSTRKEY]=show.find(globals.EL_SEARCHSTR).text
-            query=urllib.urlencode(dict)
-            #insert final query string as an aditional element <querystr> in the Element Tree
-            searchquery=ET.SubElement(show,'querystr').text=globals.SEARCH_ENGINE+query            
-
-                       
+            globals.SEARCH_QUERY[globals.SEARCHFILTERKEY]=show.find(globals.EL_SEARCHFILTER).text.encode(globals.ENC_UTF)
+            globals.SEARCH_QUERY[globals.SEARCHSTRKEY]=show.find(globals.EL_SEARCHSTR).text.encode(globals.ENC_UTF)
+            query=urllib.urlencode(globals.SEARCH_QUERY)
+            #insert final query string for the show as new show subelement <querystr> in the input tree
+            searchquery=ET.SubElement(show,'querystr').text=globals.SEARCH_ENGINE+query
+            
+    #----------------------------------------------------------------------
+    def performLogin(self):
+        """Sends login POST info to get authentication cookie set and session
+        initiated . Returns set of Cookies setup by login page"""
+    
+        #create opener to handle cookies
+        cookiejar = cookielib.LWPCookieJar()  
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
+        urllib2.install_opener(opener)
+        
+        #urlenconde the body content of the login page (the login form data)
+        login_body = urllib.urlencode(globals.LOGIN_BODY) 
+    
+        #request the login page, cookies are handled automatically
+        req = urllib2.Request(globals.LOGIN_URL, login_body, globals.LOGIN_HEADERS)           
+        handle = urllib2.urlopen(req)                               
+        handle.close()
+            
+        print cookiejar
+        
+        #returns the cookies object
+        return cookiejar
+            
+            
+    #-----------------------------------------------------------------------
+    def getMovies(self):
+        """Download the links and movies"""
+        self.fetchShowIndexes()
+        self.Cookies=self.performLogin()
+        
+    
                     
                     
                     
 ########################################################################  
 
-            
+
+
 if __name__ == "__main__":
     
     crawler=GloboFetchVideos(globals.INPUT_FILE)
-    
-    
-    
+    crawler.getMovies()
     exit()
     

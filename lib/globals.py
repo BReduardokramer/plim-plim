@@ -38,6 +38,7 @@ PLAYER_URL='http://playervideo.globo.com/webmedia/GMCPlayListASX?flash=true&midi
 LOGIN_URL='http://playervideo.globo.com/webmedia/player/GMCLogin'
 
 #Body of HTTP request to Globo's authentication engine
+"""
 LOGIN_BODY = {'login':USER_ID,\
               'senha':USER_PWD,\
               'ntr':'true',\
@@ -46,6 +47,16 @@ LOGIN_BODY = {'login':USER_ID,\
               'pp':'true',\
               'midiaId':AUTH_VIDEOID,\
               'autoStart':'true'}
+"""
+LOGIN_BODY = {'login':USER_ID,\
+              'senha':USER_PWD,\
+              'ntr':'true',\
+              'escondeFimVideo':'true',\
+              'nocache':'1213827954549',\
+              'pp':'true',\
+              'midiaId':AUTH_VIDEOID,\
+              'autoStart':'true'}
+
 
 #Headers of HTTP request to Globo's authentication engine
 LOGIN_HEADERS = {'Content-type': 'application/x-www-form-urlencoded',\
@@ -72,7 +83,7 @@ SEARCH_HEADERS = {'Content-type': 'application/x-www-form-urlencoded',\
 #Dictionary for search queries. Empty values are filled in in run-time with show information read from input file
 NEWSEARCHKEY='novaBusca'
 SEARCHSTRKEY='b'
-SEARCHFILTERKEY='b'
+SEARCHFILTERKEY='f'
 ORDERKEY='o'
 SEARCH_QUERY = {'1':'1',\
                 NEWSEARCHKEY:'1',\
