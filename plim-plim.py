@@ -2,7 +2,10 @@
 
 import lib.globals as globals
 import lib.ElementTree as ET
-import os, datetime, cookielib, urllib, urllib2, re, sys, traceback
+import os, datetime, cookielib, urllib, urllib2, re, sys, math
+from lib.BeautifulSoup import BeautifulSoup 
+from lib.BeautifulSoup import SoupStrainer
+
 
 ########################################################################
 class GloboFetchVideos():
@@ -176,50 +179,47 @@ class GloboFetchVideos():
         """For each show, finds the id (globo.com video id) of last episode existing in the download 
         directory. This id is inserted as sub element of the show elements in self.inputtree to be 
         used later"""
+        
         #Iterationg per show
         for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):
+            
             #Finding occurrence of any download element
             for download_element in globals.ELS_DOWNLOAD:
-                #if download element is found
+
+                #If download element is found
                 if show.find(download_element)<>None:         
+
                     #get directory listing of directory described by download_element
                     dir=os.listdir(show.find(download_element).text.encode(globals.ENC_LOCAL))
+
                     #match object for the file matching for this download_element 
                     reg=re.compile(globals.FILE_MATCHING[download_element],re.IGNORECASE)
                     idlist=[]
-                    #for each entry in the dir listing, matches the file matching
-                    #matching is looking for 6-digit string (see exact matching on globals.FILE_MATCHING)
+
+                    #For each entry in the dir listing, matches the file matching
+                    #looking for 6-digit string (exact matching on globals.FILE_MATCHING)
                     for elem in dir:
                         match=reg.findall(elem)
+
                         #'match' is a list (check globals.FILE_MATCHING, grouping). If something is matched
                         if len(match): 
                             #then id is the first element of 'match'. It is stored in idlist
                             idlist.append(match[0])
+
                     #sort the list of ids, and store the last as subelement to the show element
                     if len(idlist):
                         idlist.sort()
                         ET.SubElement(show,download_element+'_last').text=str(idlist[-1])
                                         
-    #----------------------------------------------------------------------
-    def fetchShowIndexes(self):
-        """Fecthes the index of matching episodes for each shown in self.inputtree"""
-        
-        for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):          
-            #Pass the input searchstring and searchfilters into the search query dictionary
-            globals.SEARCH_QUERY[globals.SEARCHFILTERKEY]=show.find(globals.EL_SEARCHFILTER).text.encode(globals.ENC_UTF)
-            globals.SEARCH_QUERY[globals.SEARCHSTRKEY]=show.find(globals.EL_SEARCHSTR).text.encode(globals.ENC_UTF)
-            query=urllib.urlencode(globals.SEARCH_QUERY)
-            #insert final query string for the show as new show subelement <querystr> in the input tree
-            searchquery=ET.SubElement(show,'querystr').text=globals.SEARCH_ENGINE+query
-            
+             
     #----------------------------------------------------------------------
     def performLogin(self):
         """Sends login POST info to get authentication cookie set and session
         initiated . Returns set of Cookies setup by login page"""
     
         #create opener to handle cookies
-        cookiejar = cookielib.LWPCookieJar()  
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
+        self.cookiejar = cookielib.LWPCookieJar()  
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookiejar))
         urllib2.install_opener(opener)
         
         #urlenconde the body content of the login page (the login form data)
@@ -229,22 +229,118 @@ class GloboFetchVideos():
         req = urllib2.Request(globals.LOGIN_URL, login_body, globals.LOGIN_HEADERS)           
         handle = urllib2.urlopen(req)                               
         handle.close()
-            
-        print cookiejar
         
-        #returns the cookies object
-        return cookiejar
-            
+        print self.cookiejar
+        
+        return
+    
             
     #-----------------------------------------------------------------------
     def getMovies(self):
         """Download the links and movies"""
-        self.fetchShowIndexes()
-        self.Cookies=self.performLogin()
         
-    
+        self.fetchShowIndexes()
+        #if not self.cookiejar: self.performLogin()
+        
+        #fetch the search results
+        
+      
+        
+
+        
+    #----------------------------------------------------------------------
+    def fetchShowIndexes(self):
+        """Fecthes the index of matching episodes for each shown in self.inputtree"""
+        
+        
+        for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):          
+            
+            showname=show.find(globals.EL_SHOWNAME).text.encode(globals.ENC_UTF)
+            searchfilters=show.find(globals.EL_SEARCHFILTER).text.encode(globals.ENC_UTF)
+            searchstr=show.find(globals.EL_SEARCHSTR).text.encode(globals.ENC_UTF)
+            globals.SEARCH_QUERY[globals.SEARCHFILTERKEY]=searchfilters
+            globals.SEARCH_QUERY[globals.SEARCHSTRKEY]=searchstr
+            
+            page=1
+            numpages=page
+            episodes=ET.SubElement(show,'episodes')
+            
+            while page<=numpages:
+                
+                #Inserts page number on the search query dictionary.
+                globals.SEARCH_QUERY[globals.PAGEKEY]=str(page)
+
+                #Now that search query is ready with all correct parameter, encode it
+                query=urllib.urlencode(globals.SEARCH_QUERY)
+                
+                #Retrieve the search results online
+                #req = urllib2.Request(globals.SEARCH_ENGINE_URL, query, globals.SEARCH_HEADERS)
+                #handle = urllib2.urlopen(req)
+                #html=handle.read()
+                #handle.close()
+                
+                #Retrieve the search results from files
+                sock=open('Search_'+showname+'_'+str(page)+'.html','r')
+                html=sock.read()
+                sock.close
+                               
+                #On the first page, collects info about the number of episodes
+                if page==1:
+
+                    #Match the total number of episodes using BeautifulSoup. For speed, parsing is done only on the 
+                    #chosen tags, by using SoupStrainer before the call to BeautifulSoup. The matched is for <li class=segundo>
+                    trainer = SoupStrainer('li', { 'class' : 'segundo' })
+                    [tag for tag in BeautifulSoup(html, parseOnlyThese=trainer)]
+                    
+                    #numepisodes is nested in the 3rd <sttong> tag inside <li class=segundo> tag                   
+                    numepisodes=int(tag.findAll('strong')[2].string)
+                                        
+                    #episodesperpage is the 2nd <strong> tag
+                    episodesperpage=int(tag.findAll('strong')[1].string)
+                    
+                    #Number of pages
+                    numpages=int(math.ceil(float(numepisodes)/float(episodesperpage)))
+                    
+                #Parsing the tags which contain the title, description, url
+                trainer = SoupStrainer('div', {'class':'conteudo-texto'})
+                soup=BeautifulSoup(html, parseOnlyThese=trainer)                            
+                
+                for tag in soup.contents:
+                    
+                    title=tag.h2.a['title']
+                    url=tag.h2.a['href']
+                    
+                    #Match episode id out of episode url 
+                    matchstr='http\S*GIM(\d{6})\S*html'    
+                    pattern=re.compile(matchstr)
+                    match=pattern.findall(url)
+                    id=match[0]                
+
+                    #Match episode description, searching inside the contents structure, as there may be tags inside the <p> tag
+                    description=''
+                    for piece in tag.p.contents:
+                        description+=piece.string 
+                    
+                    episodedetails=ET.SubElement(episodes,'episodedetails')
+                    id=ET.SubElement(episodedetails,'id').text=id
+                    title=ET.SubElement(episodedetails,'title').text=title
+                    ur=ET.SubElement(episodedetails,'url').text=url
+                    description=ET.SubElement(episodedetails,'description').text=description
                     
                     
+                #Parsing the tags which contain the duration for the episodes
+                iterator=episodes.find('episodedetails').getiterator()
+                trainer = SoupStrainer('span', {'class':'tempo'})
+                soup=BeautifulSoup(html, parseOnlyThese=trainer)
+                
+                for tag in soup.contents:
+                    duration=ET.SubElement(iterator,'duration')           
+                
+                page+=1          
+        
+        self.inputtree.write('output.xml','iso8859-1')
+        sock.close()
+              
                     
 ########################################################################  
 

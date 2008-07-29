@@ -85,13 +85,15 @@ NEWSEARCHKEY='novaBusca'
 SEARCHSTRKEY='b'
 SEARCHFILTERKEY='f'
 ORDERKEY='o'
+PAGEKEY='p'
 SEARCH_QUERY = {'1':'1',\
                 NEWSEARCHKEY:'1',\
                 SEARCHSTRKEY:'',\
                 SEARCHFILTERKEY:'',\
-                ORDERKEY:'1'}
+                ORDERKEY:'1',\
+                PAGEKEY:''}
 #base URL of the SearchEngine
-SEARCH_ENGINE = 'http://playervideo.globo.com/webmedia/GMCBusca?'
+SEARCH_ENGINE_URL = 'http://playervideo.globo.com/webmedia/GMCBusca?'
 
 
 ##############################################
