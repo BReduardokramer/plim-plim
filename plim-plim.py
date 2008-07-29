@@ -144,7 +144,7 @@ class GloboFetchVideos():
 
         #If it comes till here, then all may be well, output message         
         self.writeLog('parsing '+self.inputfile+': '+'successfully parsed input information','message')
-
+        
         
    #----------------------------------------------------------------------
     def checkDirectories(self):
@@ -209,9 +209,9 @@ class GloboFetchVideos():
                     #sort the list of ids, and store the last as subelement to the show element
                     if len(idlist):
                         idlist.sort()
-                        ET.SubElement(show,download_element+'_last').text=str(idlist[-1])
-                                        
+                        ET.SubElement(show,download_element+'_last').text=str(idlist[-1])                                        
              
+                        
     #----------------------------------------------------------------------
     def performLogin(self):
         """Sends login POST info to get authentication cookie set and session
@@ -239,108 +239,119 @@ class GloboFetchVideos():
     def getMovies(self):
         """Download the links and movies"""
         
-        self.fetchShowIndexes()
+
+        for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):
+            page=1
+            ET.SubElement(show,'numepisodes')
+            ET.SubElement(show,'episodesperpage').text=''
+            ET.SubElement(show,'numpages').text='1'
+            ET.SubElement(show,'episodes').text=''
+            while page<=int(show.find('numpages').text):
+                self.parseSearchPage(show, page)
+                page+=1
+                
+        self.parsePlayerPage('859638')
+        #self.inputtree.write('output.xml','iso8859-1')        
+        return
+    
+    #----------------------------------------------------------------------
+    def parsePlayerPage(self,videoid):
+        """Parses HTML "player page" to get direct video links. "player page" is the page obtained by calling 
+        globals.PLAYER_URL+videoid. This page returns the links to the direct flv files hosted in globo.com servers, 
+        as well as thumbnails for the videos. This function will insert the urls for the flv files and thubnails inside 
+        inputtree structure, as subelement to <episodedetails> element 
+        """
         #if not self.cookiejar: self.performLogin()
         
-        #fetch the search results
-        
+        episodes=self.inputtree.getiterator('episodedetails')
+        print 'yes'
+    
+                
       
-        
-
-        
     #----------------------------------------------------------------------
-    def fetchShowIndexes(self):
-        """Fecthes the index of matching episodes for each shown in self.inputtree"""
-        
-        
-        for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):          
-            
-            showname=show.find(globals.EL_SHOWNAME).text.encode(globals.ENC_UTF)
-            searchfilters=show.find(globals.EL_SEARCHFILTER).text.encode(globals.ENC_UTF)
-            searchstr=show.find(globals.EL_SEARCHSTR).text.encode(globals.ENC_UTF)
-            globals.SEARCH_QUERY[globals.SEARCHFILTERKEY]=searchfilters
-            globals.SEARCH_QUERY[globals.SEARCHSTRKEY]=searchstr
-            
-            page=1
-            numpages=page
-            episodes=ET.SubElement(show,'episodes')
-            
-            while page<=numpages:
-                
-                #Inserts page number on the search query dictionary.
-                globals.SEARCH_QUERY[globals.PAGEKEY]=str(page)
+    def parseSearchPage(self, show, page):
+        """Parses HTML search results page, looking for episode information, storing relevant info in inputtree"""
 
-                #Now that search query is ready with all correct parameter, encode it
-                query=urllib.urlencode(globals.SEARCH_QUERY)
-                
-                #Retrieve the search results online
-                #req = urllib2.Request(globals.SEARCH_ENGINE_URL, query, globals.SEARCH_HEADERS)
-                #handle = urllib2.urlopen(req)
-                #html=handle.read()
-                #handle.close()
-                
-                #Retrieve the search results from files
-                sock=open('Search_'+showname+'_'+str(page)+'.html','r')
-                html=sock.read()
-                sock.close
-                               
-                #On the first page, collects info about the number of episodes
-                if page==1:
-
-                    #Match the total number of episodes using BeautifulSoup. For speed, parsing is done only on the 
-                    #chosen tags, by using SoupStrainer before the call to BeautifulSoup. The matched is for <li class=segundo>
-                    trainer = SoupStrainer('li', { 'class' : 'segundo' })
-                    [tag for tag in BeautifulSoup(html, parseOnlyThese=trainer)]
-                    
-                    #numepisodes is nested in the 3rd <sttong> tag inside <li class=segundo> tag                   
-                    numepisodes=int(tag.findAll('strong')[2].string)
-                                        
-                    #episodesperpage is the 2nd <strong> tag
-                    episodesperpage=int(tag.findAll('strong')[1].string)
-                    
-                    #Number of pages
-                    numpages=int(math.ceil(float(numepisodes)/float(episodesperpage)))
-                    
-                #Parsing the tags which contain the title, description, url
-                trainer = SoupStrainer('div', {'class':'conteudo-texto'})
-                soup=BeautifulSoup(html, parseOnlyThese=trainer)                            
-                
-                for tag in soup.contents:
-                    
-                    title=tag.h2.a['title']
-                    url=tag.h2.a['href']
-                    
-                    #Match episode id out of episode url 
-                    matchstr='http\S*GIM(\d{6})\S*html'    
-                    pattern=re.compile(matchstr)
-                    match=pattern.findall(url)
-                    id=match[0]                
-
-                    #Match episode description, searching inside the contents structure, as there may be tags inside the <p> tag
-                    description=''
-                    for piece in tag.p.contents:
-                        description+=piece.string 
-                    
-                    episodedetails=ET.SubElement(episodes,'episodedetails')
-                    id=ET.SubElement(episodedetails,'id').text=id
-                    title=ET.SubElement(episodedetails,'title').text=title
-                    ur=ET.SubElement(episodedetails,'url').text=url
-                    description=ET.SubElement(episodedetails,'description').text=description
-                    
-                    
-                #Parsing the tags which contain the duration for the episodes
-                iterator=episodes.find('episodedetails').getiterator()
-                trainer = SoupStrainer('span', {'class':'tempo'})
-                soup=BeautifulSoup(html, parseOnlyThese=trainer)
-                
-                for tag in soup.contents:
-                    duration=ET.SubElement(iterator,'duration')           
-                
-                page+=1          
+        #Find showname, searchstr, searchfilters and page. Insert them in the search dictionary
+        showname=show.find(globals.EL_SHOWNAME).text.encode(globals.ENC_UTF)
+        searchfilters=show.find(globals.EL_SEARCHFILTER).text.encode(globals.ENC_UTF)
+        searchstr=show.find(globals.EL_SEARCHSTR).text.encode(globals.ENC_UTF)
+        globals.SEARCH_QUERY[globals.SEARCHFILTERKEY]=searchfilters
+        globals.SEARCH_QUERY[globals.SEARCHSTRKEY]=searchstr
+        globals.SEARCH_QUERY[globals.PAGEKEY]=str(page)            
         
-        self.inputtree.write('output.xml','iso8859-1')
-        sock.close()
-              
+        #Encode search dictionary into for querying
+        query=urllib.urlencode(globals.SEARCH_QUERY)
+        
+        #Retrieve the search results online
+        #req = urllib2.Request(globals.SEARCH_ENGINE_URL, query, globals.SEARCH_HEADERS)
+        #handle = urllib2.urlopen(req)
+        #html=handle.read()
+        #handle.close()
+        
+        #Retrieve the search results from files
+        sock=open('Search_'+showname+'_'+str(page)+'.html','r')
+        html=sock.read()
+        sock.close
+                       
+        #On the first page, info about the number of episodes is collected
+        if page==1:
+
+            #Using BeautifulSoup for mathing the html. For speed, parsing is done only on the chosen tags, by using SoupStrainer 
+            #before the call to BeautifulSoup. We match only tags "<li class=segundo>"
+            trainer = SoupStrainer('li', { 'class' : 'segundo' })            
+            [tag for tag in BeautifulSoup(html, parseOnlyThese=trainer)]
+            
+            #numepisodes is nested in the 3rd <sttong> tag inside <li class=segundo> tag. Match and store it as element in inputtree under show element
+            numepisodes=int(tag.findAll('strong')[2].string)
+            show.find('numepisodes').text=str(numepisodes)        
+                                
+            #episodesperpage is the 2nd <strong> tag. Match and store it in inputtree
+            episodesperpage=int(tag.findAll('strong')[1].string)
+            show.find('episodesperpage').text=str(episodesperpage)
+            
+            #Number of pages. Match and store it in inputtree
+            show.find('numpages').text=str(int(math.ceil(float(numepisodes)/float(episodesperpage))))
+                        
+        #Episode title, description, url are stored in <div class=conteudo-texto> tags in the html code
+        trainer = SoupStrainer('div', {'class':'conteudo-texto'})
+        soup=BeautifulSoup(html, parseOnlyThese=trainer)                            
+        
+        #For each <div class=conteudo-texto> tag, matches and store the relevant info
+        for tag in soup.contents:
+            
+            #Subelement to hold episode details
+            episodedetails=ET.SubElement(show.find('episodes'),'episodedetails')
+            
+            #Match the episode title and store it as subelement of episodetails
+            ET.SubElement(episodedetails,'title').text=tag.h2.a['title']
+            
+            #Match the episode url and store it as subelement of episodetails
+            ET.SubElement(episodedetails,'url').text=tag.h2.a['href']
+            
+            #Match episode id out of the episode url, and store it as subelement of episodetails
+            matchstr='http\S*GIM(\d{6})\S*html'    
+            pattern=re.compile(matchstr)
+            match=pattern.findall(tag.h2.a['href'])
+            ET.SubElement(episodedetails,'id').text=match[0]                
+
+            #Match episode description and store it as subelement of episodetails. The whole contents data of the tag is retrieved, as there 
+            #may be sub tags inside the <p> tag
+            description=''
+            for piece in tag.p.contents:
+                description+=piece.string 
+            ET.SubElement(episodedetails,'description').text=description
+            
+        #Episodes durations are stored in <span class=tempo> tags in the html code
+        trainer = SoupStrainer('span', {'class':'tempo'})
+        soup=BeautifulSoup(html, parseOnlyThese=trainer)
+
+        #We need to iterate through the already existing episodedetails elements and insert the duration as subelement to each.
+        iterator=show.find('episodes').getiterator('episodedetails')       
+        for index,tag in enumerate(soup):
+            ET.SubElement(iterator[index],'duration').text=tag.string       
+            
+  
                     
 ########################################################################  
 
