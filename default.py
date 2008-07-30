@@ -3,7 +3,7 @@
 #Base libraries imports
 import os, datetime, cookielib, urllib, urllib2, re, sys, math
 
-#Local resources
+#Local resources imports
 BASE_RESOURCE_PATH = os.path.join( os.getcwd().replace( ";", "" ), "resources" )
 sys.path.append( os.path.join( BASE_RESOURCE_PATH, "lib" ) )
 import ElementTree as ET
