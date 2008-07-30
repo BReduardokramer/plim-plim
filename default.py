@@ -1,10 +1,15 @@
 #!/usr/bin/python
 
-import lib.globals as globals
-import lib.ElementTree as ET
+#Base libraries imports
 import os, datetime, cookielib, urllib, urllib2, re, sys, math
-from lib.BeautifulSoup import BeautifulSoup 
-from lib.BeautifulSoup import SoupStrainer
+
+#Local resources
+BASE_RESOURCE_PATH = os.path.join( os.getcwd().replace( ";", "" ), "resources" )
+sys.path.append( os.path.join( BASE_RESOURCE_PATH, "lib" ) )
+import ElementTree as ET
+from BeautifulSoup import BeautifulSoup, SoupStrainer
+import globals
+import toolbox
 
 
 ########################################################################
