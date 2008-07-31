@@ -239,26 +239,7 @@ class GloboFetchVideos():
         
         return
     
-            
-    #-----------------------------------------------------------------------
-    def getMovies(self):
-        """Download the links and movies"""
-        
-
-        for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):
-            page=1
-            ET.SubElement(show,'numepisodes')
-            ET.SubElement(show,'episodesperpage').text=''
-            ET.SubElement(show,'numpages').text='1'
-            ET.SubElement(show,'episodes').text=''
-            while page<=int(show.find('numpages').text):
-                self.parseSearchPage(show, page)
-                page+=1
-                
-        self.parsePlayerPage('859638')
-        #self.inputtree.write('output.xml','iso8859-1')        
-        return
-    
+             
     #----------------------------------------------------------------------
     def parsePlayerPage(self,videoid):
         """Parses HTML "player page" to get direct video links. "player page" is the page obtained by calling 
@@ -268,95 +249,126 @@ class GloboFetchVideos():
         """
         #if not self.cookiejar: self.performLogin()
         
-        episodes=self.inputtree.getiterator('episodedetails')
+        episodes=self.inputtree.getiterator(globals.EL_EPISODEDETAILS)
         print 'yes'
     
                 
       
     #----------------------------------------------------------------------
-    def parseSearchPage(self, show, page):
-        """Parses HTML search results page, looking for episode information, storing relevant info in inputtree"""
+    def SearchEpisodes(self):
+        """Walk the show tags in inputtree. For each, search results will be fetched and stored back in inputtree """
+        
+        for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):
 
-        #Find showname, searchstr, searchfilters and page. Insert them in the search dictionary
-        showname=show.find(globals.EL_SHOWNAME).text.encode(globals.ENC_UTF)
-        searchfilters=show.find(globals.EL_SEARCHFILTER).text.encode(globals.ENC_UTF)
-        searchstr=show.find(globals.EL_SEARCHSTR).text.encode(globals.ENC_UTF)
-        globals.SEARCH_QUERY[globals.SEARCHFILTERKEY]=searchfilters
-        globals.SEARCH_QUERY[globals.SEARCHSTRKEY]=searchstr
-        globals.SEARCH_QUERY[globals.PAGEKEY]=str(page)            
-        
-        #Encode search dictionary into for querying
-        query=urllib.urlencode(globals.SEARCH_QUERY)
-        
-        #Retrieve the search results online
-        #req = urllib2.Request(globals.SEARCH_ENGINE_URL, query, globals.SEARCH_HEADERS)
-        #handle = urllib2.urlopen(req)
-        #html=handle.read()
-        #handle.close()
-        
-        #Retrieve the search results from files
-        sock=open('Search_'+showname+'_'+str(page)+'.html','r')
-        html=sock.read()
-        sock.close
-                       
-        #On the first page, info about the number of episodes is collected
-        if page==1:
+            #page number of the search results. Will be used as a counter when looping through results with several pages
+            page=1
 
-            #Using BeautifulSoup for mathing the html. For speed, parsing is done only on the chosen tags, by using SoupStrainer 
-            #before the call to BeautifulSoup. We match only tags "<li class=segundo>"
-            trainer = SoupStrainer('li', { 'class' : 'segundo' })            
-            [tag for tag in BeautifulSoup(html, parseOnlyThese=trainer)]
+            #Create subelement of show to store information coming from the search. Information will be filled further in the loop
+            ET.SubElement(show,globals.EL_NUMEPISODES)
+            ET.SubElement(show,globals.EL_EPISODESPERPAGE).text=''
+            #There will always at least one result page
+            ET.SubElement(show,globals.EL_NUMPAGES).text='1'
+            ET.SubElement(show,globals.EL_EPISODELIST).text=''
             
-            #numepisodes is nested in the 3rd <sttong> tag inside <li class=segundo> tag. Match and store it as element in inputtree under show element
-            numepisodes=int(tag.findAll('strong')[2].string)
-            show.find('numepisodes').text=str(numepisodes)        
+            showname=show.find(globals.EL_SHOWNAME).text.encode(globals.ENC_UTF)
+            
+            #Insert information into the query which will be submitted to the seach enginge. 
+            searchfilters=show.find(globals.EL_SEARCHFILTER).text.encode(globals.ENC_UTF)
+            searchstr=show.find(globals.EL_SEARCHSTR).text.encode(globals.ENC_UTF)         
+            globals.SEARCH_QUERY[globals.SEARCHFILTERKEY]=searchfilters
+            globals.SEARCH_QUERY[globals.SEARCHSTRKEY]=searchstr
+            
+            self.writeLog('looking for episodes for '+showname,'message')
+            
+            
+            while page<=int(show.find(globals.EL_NUMPAGES).text): 
+
+                #Last on the search query is the page number
+                globals.SEARCH_QUERY[globals.PAGEKEY]=str(page)            
+                
+                #Encode search query for querying
+                query=urllib.urlencode(globals.SEARCH_QUERY)
+                
+                #Retrieve the search results online
+                req = urllib2.Request(globals.SEARCH_ENGINE_URL, query, globals.SEARCH_HEADERS)
+                try:
+                    handle = urllib2.urlopen(req)
+                    html=handle.read()
+                    handle.close()
+                    file=open('html_'+showname+'_page_'+str(page)+'.html','w')
+                    file.write(html)
+                    file.close()
+                except Exception,ex:
+                    self.writeLog('searching episodes for '+showname+': '+str(detail),'error')
+                    exit()
+               
+                #Retrieve the search results offline, from files (useful for offline coding, i.e. in planes)
+                #filename='resources\offlinedata\Search_'+showname+'_'+str(page)+'.html'
+                #sock=open('.\\resources\offlinedata\Search_'+showname+'_'+str(page)+'.html','r')
+                #html=sock.read()
+                #sock.close
+                               
+                #On the first page, check whether any video was found, and if found, get info about the number of episodes
+                if page==1:
+        
+                    #Using BeautifulSoup for mathing the html. For speed, parsing is done only on the chosen tags, by using SoupStrainer 
+                    #before the call to BeautifulSoup. <li class=segundo> is the tag holding number of episodes info
+                    trainer = SoupStrainer('li', { 'class' : 'segundo' })            
+                    [tag for tag in BeautifulSoup(html, parseOnlyThese=trainer)]
+                    
+                    #numepisodes is nested in the 3rd <sttong> tag inside <li class=segundo> tag. 
+                    numepisodes=int(tag.findAll('strong')[2].string)
+                    show.find(globals.EL_NUMEPISODES).text=str(numepisodes)        
+                    self.writeLog(showname+': '+str(numepisodes)+' episodes found','message')
+                                        
+                    #episodesperpage is the 2nd <strong> tag.
+                    episodesperpage=int(tag.findAll('strong')[1].string)
+                    show.find(globals.EL_EPISODESPERPAGE).text=str(episodesperpage)
+                    
+                    #Number of pages.
+                    show.find(globals.EL_NUMPAGES).text=str(int(math.ceil(float(numepisodes)/float(episodesperpage))))
                                 
-            #episodesperpage is the 2nd <strong> tag. Match and store it in inputtree
-            episodesperpage=int(tag.findAll('strong')[1].string)
-            show.find('episodesperpage').text=str(episodesperpage)
-            
-            #Number of pages. Match and store it in inputtree
-            show.find('numpages').text=str(int(math.ceil(float(numepisodes)/float(episodesperpage))))
-                        
-        #Episode title, description, url are stored in <div class=conteudo-texto> tags in the html code
-        trainer = SoupStrainer('div', {'class':'conteudo-texto'})
-        soup=BeautifulSoup(html, parseOnlyThese=trainer)                            
+                #Episode title, description, url are stored in <div class=conteudo-texto> tags in the html code
+                trainer = SoupStrainer('div', {'class':'conteudo-texto'})
+                soup=BeautifulSoup(html, parseOnlyThese=trainer)                            
+                
+                #For each <div class=conteudo-texto> tag, matches and store the relevant info
+                for tag in soup.contents:
+                    
+                    #Subelement to hold episode details
+                    episodedetails=ET.SubElement(show.find(globals.EL_EPISODELIST),globals.EL_EPISODEDETAILS)
+                    
+                    #Match the episode title and store it as subelement of episodetails
+                    ET.SubElement(episodedetails,globals.EL_EPISODETITLE).text=tag.h2.a['title']
+                    
+                    #Match the episode url and store it as subelement of episodetails
+                    ET.SubElement(episodedetails,globals.EL_EPISODEURL).text=tag.h2.a['href']
+                    
+                    #Match episode id out of the episode url, and store it as subelement of episodetails
+                    matchstr='http\S*GIM(\d{6})\S*html'    
+                    pattern=re.compile(matchstr)
+                    match=pattern.findall(tag.h2.a['href'])
+                    ET.SubElement(episodedetails,globals.EL_EPISODEID).text=match[0]                
         
-        #For each <div class=conteudo-texto> tag, matches and store the relevant info
-        for tag in soup.contents:
-            
-            #Subelement to hold episode details
-            episodedetails=ET.SubElement(show.find('episodes'),'episodedetails')
-            
-            #Match the episode title and store it as subelement of episodetails
-            ET.SubElement(episodedetails,'title').text=tag.h2.a['title']
-            
-            #Match the episode url and store it as subelement of episodetails
-            ET.SubElement(episodedetails,'url').text=tag.h2.a['href']
-            
-            #Match episode id out of the episode url, and store it as subelement of episodetails
-            matchstr='http\S*GIM(\d{6})\S*html'    
-            pattern=re.compile(matchstr)
-            match=pattern.findall(tag.h2.a['href'])
-            ET.SubElement(episodedetails,'id').text=match[0]                
-
-            #Match episode description and store it as subelement of episodetails. The whole contents data of the tag is retrieved, as there 
-            #may be sub tags inside the <p> tag
-            description=''
-            for piece in tag.p.contents:
-                description+=piece.string 
-            ET.SubElement(episodedetails,'description').text=description
-            
-        #Episodes durations are stored in <span class=tempo> tags in the html code
-        trainer = SoupStrainer('span', {'class':'tempo'})
-        soup=BeautifulSoup(html, parseOnlyThese=trainer)
-
-        #We need to iterate through the already existing episodedetails elements and insert the duration as subelement to each.
-        iterator=show.find('episodes').getiterator('episodedetails')       
-        for index,tag in enumerate(soup):
-            ET.SubElement(iterator[index],'duration').text=tag.string       
-            
-  
+                    #Match episode description and store it as subelement of episodetails. The whole contents data of the tag is retrieved, as there 
+                    #may be sub tags inside the <p> tag
+                    description=''
+                    for piece in tag.p.contents:
+                        description+=piece.string 
+                    ET.SubElement(episodedetails,globals.EL_EPISODEDESCRIPTION).text=description
+                    
+                #Episodes durations are stored in <span class=tempo> tags in the html code
+                trainer = SoupStrainer('span', {'class':'tempo'})
+                soup=BeautifulSoup(html, parseOnlyThese=trainer)
+        
+                #We need to iterate through the already existing episodedetails elements and insert the duration as subelement to each.
+                iterator=show.find(globals.EL_EPISODELIST).getiterator(globals.EL_EPISODEDETAILS)       
+                for index,tag in enumerate(soup):
+                    ET.SubElement(iterator[index],globals.EL_EPISODEDURATION).text=tag.string       
+                    
+                        
+                self.writeLog(showname+': Search results page '+str(page)+' parsed','message')
+                page+=1  
                     
 ########################################################################  
 
@@ -365,6 +377,7 @@ class GloboFetchVideos():
 if __name__ == "__main__":
     
     crawler=GloboFetchVideos(globals.INPUT_FILE)
-    crawler.getMovies()
+    crawler.SearchEpisodes()
+    crawler.inputtree.write('output.xml',globals.ENC_LOCAL)
     exit()
     

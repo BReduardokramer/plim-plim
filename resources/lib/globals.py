@@ -127,3 +127,17 @@ ELS_ALLOWED.extend(ELS_OPTIONAL)
 FILE_MATCHING={EL_DLM3U:'(\d{6}).m3u$',\
                EL_DLMOVIES:'(\d{6})\s{1}\d{2}.flv$'}
 
+
+##############################################
+# Additional elements
+EL_NUMEPISODES='numepisodes'
+EL_NUMPAGES='numpages'
+EL_EPISODESPERPAGE='episodesperpage'
+EL_EPISODELIST='episodelist'
+
+EL_EPISODEDETAILS='episodedetails'
+EL_EPISODETITLE='title'
+EL_EPISODEURL='url'
+EL_EPISODEID='id'
+EL_EPISODEDESCRIPTION='description'
+EL_EPISODEDURATION='duration'
