@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import os
 
 ##############################################
 # Globo.com account information
@@ -113,9 +114,15 @@ ELS_ALLOWED.extend(ELS_MANDATORY)
 ELS_ALLOWED.extend(ELS_DOWNLOAD)
 ELS_ALLOWED.extend(ELS_OPTIONAL)
 
+##############################################
+# Matching pattern for searching for existing playlists and movies
 FILE_MATCHING={EL_DLM3U:'(\d{6}).m3u$',\
                EL_DLMOVIES:'(\d{6})\s{1}\d{2}.flv$'}
 
+##############################################
+# Naming standard playlists and movies
+FILE_NAMING={EL_DLM3U:'(\d{6}).m3u$',\
+             EL_DLMOVIES:'(\d{6})\s{1}\d{2}.flv$'}
 
 ##############################################
 # Additional elements, added to the input tree on runtime
@@ -130,3 +137,16 @@ EL_EPISODEURL='url'
 EL_EPISODEID='id'
 EL_EPISODEDESCRIPTION='description'
 EL_EPISODEDURATION='duration'
+EL_EPISODEDATE='date'
+
+##############################################
+# Flags to change the behaviour of the script for convenience on development/debug
+#
+# DEVEL_MODE= 'download' -> the script queries the search engine online, and saves the html pages found locally
+# DEVEL_MODE= 'offline'  -> the script imports the search results from the local html files, instead of querying the online search engine
+# DEVEL_MODE= ''         -> the script queries the search engine online, and do not save html files (this is the normal user mode)
+#
+# DEVEL_MODE_DNLOADDIR   -> location of the local html files
+#
+DEV_MODE='offline'
+DEV_MODE_DIR='resources\\offlinedata\\'

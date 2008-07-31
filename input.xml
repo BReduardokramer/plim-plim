@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <plim-plim author="lepreshawn@gmail.com">
 <!-->
+
  <show>
   <showname>Jornal Nacional</showname>
   <searchstring>Jornal Nacional</searchstring>
@@ -8,15 +9,18 @@
   <downloadm3u>resources\media\Jornal Nacional</downloadm3u>
   <maximumepisodes>10</maximumepisodes>
  </show>
+
 <!-->
+
  <show>
   <showname>A Grande Família</showname>
   <searchstring>A Grande Família</searchstring>
-  <searchfilters>tipomidia:íntegra</searchfilters>
+  <searchfilters>tipomidia:íntegra,programa:a grande família</searchfilters>
   <downloadm3u>resources\media\A Grande Família M3U</downloadm3u>
   <downloadmovies>resources\media\A Grande Família Movies</downloadmovies>
   <maximumepisodes>10</maximumepisodes>
  </show>
+<!-->
 
  <show>
   <showname>Dummy</showname>
@@ -25,6 +29,7 @@
   <downloadm3u>resources\media\Dummy M3U</downloadm3u>
   <maximumepisodes>10</maximumepisodes>
  </show>
+<!-->
 
 
 </plim-plim>
