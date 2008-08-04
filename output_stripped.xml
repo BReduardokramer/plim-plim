@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='iso-8859-1'?>
+<plim-plim author="lepreshawn@gmail.com">
+
+
+ <show>
+  <showname>A Grande Família</showname>
+  <searchstring>A Grande Família</searchstring>
+  <searchfilters>tipomidia:íntegra,programa:a grande família</searchfilters>
+  <downloadm3u>resources\media\A Grande Família M3U</downloadm3u>
+  <downloadmovies>resources\media\A Grande Família Movies</downloadmovies>
+  <maximumepisodes>10</maximumepisodes>
+ <downloadm3u_last>852887</downloadm3u_last><downloadmovies_last>847358</downloadmovies_last><oldestneeded>847358</oldestneeded><totalsearchpagesfound>4</totalsearchpagesfound><episodelist><episodedetails><title>A Grande Família - Episódio 'De veterinário e louco, todo mundo tem um pouco' na integra</title><url>http://video.globo.com/Videos/Player/Entretenimento/0,,GIM860265-7822-A+GRANDE+FAMILIA+EPISODIO+DE+VETERINARIO+E+LOUCO+TODO+MUNDO+TEM+UM+POUCO+NA+INTEGRA,00.html</url><id>860265</id><description>Nenê resolve ajudar Lineu na clínica veterinária, já que Tuco alega estar doente e que seu problema é estafa.</description><duration>32m12s</duration><date>24/07/2008</date></episodedetails><episodedetails><title>A Grande Família - Episódio 'Besame Tuco'</title><url>http://video.globo.com/Videos/Player/Entretenimento/0,,GIM857091-7822-A+GRANDE+FAMILIA+EPISODIO+BESAME+TUCO,00.html</url><id>857091</id><description>Tuco vira um funcionário exemplar da noite para o dia e deixa todos impressionados. Tudo para Lineu lhe dar um aumento.</description><duration>30m49s</duration><date>17/07/2008</date></episodedetails><episodedetails><title>A Grande Família - Episódio 'Se Essa Casa Fosse Minha'</title><url>http://video.globo.com/Videos/Player/Entretenimento/0,,GIM853923-7822-A+GRANDE+FAMILIA+EPISODIO+SE+ESSA+CASA+FOSSE+MINHA,00.html</url><id>853923</id><description>Agostinho briga com Beiçola e é obrigado a arrumar um novo lugar para morar com Bebel!</description><duration>34m22s</duration><date>10/07/2008</date></episodedetails><episodedetails><title>Video Show - Programa de Quarta-Feira, na íntegra</title><url>http://video.globo.com/Videos/Player/Entretenimento/0,,GIM852887-7822-VIDEO+SHOW+PROGRAMA+DE+QUARTAFEIRA+NA+INTEGRA,00.html</url><id>852887</id><description>O Video Show mostra o Falha Nossa especial dos programas da Globo, relembra André e Angélica encenando Brega e Chique e coloca o elenco de Ciranda de Pedra para soltar a voz no Video Game!</description><duration>40m53s</duration><date>09/07/2008</date></episodedetails><episodedetails><title>A Grande Família - Episódio: Vovó Gatinha, na íntegra</title><url>http://video.globo.com/Videos/Player/Entretenimento/0,,GIM850672-7822-A+GRANDE+FAMILIA+EPISODIO+VOVO+GATINHA+NA+INTEGRA,00.html</url><id>850672</id><description>Agostinho resolve fazer um concurso entre as avós do bairro para descobrir qual delas é a mais bonita.</description><duration>36m32s</duration><date>03/07/2008</date></episodedetails></episodelist></show>
+
+
+
+</plim-plim>
