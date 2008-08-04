@@ -96,6 +96,7 @@ EL_DLMOVIES='downloadmovies'
 EL_ROOT='plim-plim'
 EL_SHOW='show'
 EL_MAXEPISODES='maximumepisodes'
+EL_OLDEST='oldestneeded'
 
 ELS_MANDATORY=[]
 ELS_MANDATORY.append(EL_SHOWNAME)
@@ -127,7 +128,7 @@ FILE_NAMING={EL_DLM3U:'(\d{6}).m3u$',\
 ##############################################
 # Additional elements, added to the input tree on runtime
 EL_NUMEPISODES='numepisodes'
-EL_NUMPAGES='numpages'
+EL_NUMPAGES='totalsearchpagesfound'
 EL_EPISODESPERPAGE='episodesperpage'
 EL_EPISODELIST='episodelist'
 
@@ -142,11 +143,11 @@ EL_EPISODEDATE='date'
 ##############################################
 # Flags to change the behaviour of the script for convenience on development/debug
 #
-# DEVEL_MODE= 'download' -> the script queries the search engine online, and saves the html pages found locally
-# DEVEL_MODE= 'offline'  -> the script imports the search results from the local html files, instead of querying the online search engine
+# DEVEL_MODE= 'download' -> the script queries the search engine online, downloading the html pages found locally, then proceed
+# DEVEL_MODE= 'offline'  -> the script imports the search results from local html files, instead of querying the online search engine
 # DEVEL_MODE= ''         -> the script queries the search engine online, and do not save html files (this is the normal user mode)
 #
-# DEVEL_MODE_DNLOADDIR   -> location of the local html files
+# DEVEL_MODE_DNLOADDIR   -> directory for the local html files
 #
 DEV_MODE='offline'
 DEV_MODE_DIR='resources\\offlinedata\\'
