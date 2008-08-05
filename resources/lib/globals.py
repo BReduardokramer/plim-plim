@@ -143,9 +143,9 @@ EL_EPISODEDATE='date'
 ##############################################
 # Flags to change the behaviour of the script for convenience on development/debug
 #
-# DEVEL_MODE= 'download' -> the script queries the search engine online, downloading the html pages found locally, then proceed
-# DEVEL_MODE= 'offline'  -> the script imports the search results from local html files, instead of querying the online search engine
-# DEVEL_MODE= ''         -> the script queries the search engine online, and do not save html files (this is the normal user mode)
+# DEVEL_MODE= 'download' -> script queries the search engine online, downloading the html pages found to the local disk, then proceed
+# DEVEL_MODE= 'offline'  -> script imports the search results from local html files, instead of querying the online search engine
+# DEVEL_MODE= ''         -> script queries the search engine online, and do not save html files (this is the normal user mode)
 #
 # DEVEL_MODE_DNLOADDIR   -> directory for the local html files
 #

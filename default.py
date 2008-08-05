@@ -13,9 +13,9 @@ import toolbox
 
 
 ########################################################################
-class plim_plim():
+class plimplim():
     """Download globo.com movies based on input file """
-
+    
     #----------------------------------------------------------------------
     def __init__(self, inputfile):
         """Initiates object, reading input file"""
@@ -30,6 +30,8 @@ class plim_plim():
     def writeLog(self, logstr,type):
         
         """Outputs Error information to log file"""
+        
+        logstr=logstr.encode(globals.ENC_LOCAL)
 
         if type=='error':
             datestr=datetime.datetime.now().strftime("%d.%m.%Y-%H:%M:%S")
@@ -206,8 +208,8 @@ class plim_plim():
                 #check only for existing elements
                 if show.find(download_element)<>None:      
                     
-                    showname=show.find(globals.EL_SHOWNAME).text.encode(globals.ENC_LOCAL)
-                    downloaddir=show.find(download_element).text.encode(globals.ENC_LOCAL)
+                    showname=show.find(globals.EL_SHOWNAME).text
+                    downloaddir=show.find(download_element).text
 
                     #get directory listing of directory described by download_element
                     dir=os.listdir(downloaddir)
@@ -218,9 +220,9 @@ class plim_plim():
 
                     #for each entry in the dir listing, matches the file matching
                     #looking for the id, a 6-digit string (check match pattern on globals.FILE_MATCHING)
-                    for elem in dir:
+                    for file in dir:
 
-                        match=reg.findall(elem)
+                        match=reg.findall(file)
 
                         #'match' is a list (check globals.FILE_MATCHING, grouping). If something is matched.
                         if len(match): 
@@ -231,7 +233,7 @@ class plim_plim():
                     #sort the list of ids, and store the last as subelement to the show element
                     if len(idlist):
                         idlist.sort()
-                        self.writeLog('Show "'+showname+'"'+': id of latest existing episode in \"'+downloaddir+'\" is '+str(idlist[-1]),'message')
+                        self.writeLog('Show '+showname+''+': id of latest existing episode in '+downloaddir+' is '+str(idlist[-1]),'message')
                         ET.SubElement(show,download_element+'_last').text=str(idlist[0])
                         newest_episodes_found.append(idlist[-1])
                     else:
@@ -252,7 +254,7 @@ class plim_plim():
         initiated . Cookis are stored in self.cookiejar"""
     
         #create opener to handle cookies
-        self.cookiejar = cookielib.LWPCookieJar()  
+        cookiejar = cookielib.LWPCookieJar()  
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookiejar))
         urllib2.install_opener(opener)
         
@@ -261,254 +263,319 @@ class plim_plim():
     
         #request the login page, cookies are handled automatically
         req = urllib2.Request(globals.LOGIN_URL, login_body, globals.LOGIN_HEADERS)           
-        handle = urllib2.urlopen(req)                               
-        handle.close()
+        sock = urllib2.urlopen(req)                               
+        sock.close()
+        
+        return cookiejar
     
              
   
         
     
-    #----------------------------------------------------------------------
-    def openPage(self, filename=None):
-        """Open search age using the global search parameters, returning the html code of the page. Alternatively, if filename is 
-        provided, the pages are opened from local files, for convinience, i.e. for debuging the software, and coding while offline."""
-        if not filename:
-            req = urllib2.Request(globals.SEARCH_ENGINE_URL, urllib.urlencode(globals.SEARCH_QUERY), globals.SEARCH_HEADERS)
-            handle = urllib2.urlopen(req)
-            html=handle.read()
-            handle.close()
-        else:
-            sock=open(filename,'r')
-            html=sock.read()
-            sock.close
-        return html                               
-    
-    #----------------------------------------------------------------------
-    def exportSearchResults(self, html, filename):
-        """Utility function to export each searh results page. Useful for debug purposes. This function generates 
-        he files that can later be used by self.openPage"""
-        sock=open(filename,'w')
-        sock.write(html)
-        sock.close()
-    
         
+    #----------------------------------------------------------------------
+    def parseEpisodeSearch_numpages(self, html):
+        """Returns the number of pages found in each show's search results first page"""
 
+        #<li class=segundo> is the tag holding number of episodes info
+        trainer = SoupStrainer('li', { 'class' : 'segundo' })            
+        list=[tag for tag in BeautifulSoup(html, parseOnlyThese=trainer)]
         
-   
+        numpages=''
+        
+        #If matches are returned, then episodes were found, parses information about number of episodes and pages
+        if len(list):
+            
+            #numepisodes is nested in the 3rd <sttong> tag inside <li class=segundo> tag. 
+            numepisodes=tag.findAll('strong')[2].string
+                                
+            #episodesperpage is the 2nd <strong> tag.
+            episodesperpage=int(tag.findAll('strong')[1].string)
+            
+            #Number of pages.
+            numpages=str(int(math.ceil(float(numepisodes)/float(episodesperpage))))
+                                                        
+        return numpages
+    
+
+    #----------------------------------------------------------------------
+    def parseEpisodeSearch(self, html):
+        """Parse the search result pages matching information about the episodes. Information found is inserted into self.inputtree"""
+        
+        #using BeautifulSoup for mathing the html. For speed, parsing is done only on the chosen tags, by using SoupStrainer 
+        #before the call to BeautifulSoup. Episode title, description and url information are stored all together 
+        #in <div class=conteudo-texto> tags in the html code
+        trainer = SoupStrainer('div', {'class':'conteudo-texto'})
+        soup=BeautifulSoup(html, parseOnlyThese=trainer)            
+        
+        #element to hold the list of episodes found
+        episodeslist=ET.Element(globals.EL_EPISODELIST)
+        
+        #for each <div class=conteudo-texto> tag, matches and store the relevant info
+        for tag in soup.contents:
+            
+            #subelement to hold episode details
+            episodedetails=ET.SubElement(episodeslist,globals.EL_EPISODEDETAILS)
+            
+            #match the episode title and store it as subelement of episodetails
+            ET.SubElement(episodedetails,globals.EL_EPISODETITLE).text=tag.h2.a['title']
+            
+            #match the episode url and store it as subelement of episodetails
+            ET.SubElement(episodedetails,globals.EL_EPISODEURL).text=tag.h2.a['href']
+            
+            #match episode id out of the episode url, and store it as subelement of episodetails
+            matchstr='http\S*GIM(\d{6})\S*html'    
+            pattern=re.compile(matchstr)
+            match=pattern.findall(tag.h2.a['href'])
+            ET.SubElement(episodedetails,globals.EL_EPISODEID).text=match[0]                
+    
+            #match episode description and store it as subelement of episodetails. The whole "contents" field of the tag is retrieved, as there 
+            #may be sub tags inside the <p> tag
+            description=''
+            for piece in tag.p.contents:
+                description+=piece.string 
+            ET.SubElement(episodedetails,globals.EL_EPISODEDESCRIPTION).text=description
+        
+        #episodes durations are stored in <span class="tempo"> tags in the html code
+        trainer = SoupStrainer('span', {'class':'tempo'})
+        soup=BeautifulSoup(html, parseOnlyThese=trainer)
+            
+        #we need to iterate through the already existing episodedetails elements and insert the duration as subelement to each.
+        iterator=episodeslist.getiterator(globals.EL_EPISODEDETAILS)       
+        for index,tag in enumerate(soup):
+            ET.SubElement(iterator[index],globals.EL_EPISODEDURATION).text=tag.string       
+                
+        #episodes dates are stored in <td class="coluna-data"> tags in the html code
+        trainer = SoupStrainer('td', {'class':'coluna-data'})
+        soup=BeautifulSoup(html, parseOnlyThese=trainer)
+
+        #we need to iterate through the already existing episodedetails elements and insert the duration as subelement to each.
+        iterator=episodeslist.getiterator(globals.EL_EPISODEDETAILS)       
+        for index,tag in enumerate(soup):
+            ET.SubElement(iterator[index],globals.EL_EPISODEDATE).text=tag.string       
+            
+        return episodeslist         
+    
+
+    #----------------------------------------------------------------------
+    def openPage(self, req, filename=None):
+        """Open the requested page. If filename is given, opens page from a local file named filename"""
+        
+        try:
+            if filename: 
+                sock=open(filename,'r')
+            else: 
+                sock = urllib2.urlopen(req)
+            html=sock.read()
+            sock.close()
+            return html                               
+
+        except Exception, detail:
+            if filename:
+                self.writeLog('opening local page \"'+filename+'\" - '+str(detail),'error')
+            else:
+                self.writeLog('opening page \"'+filename+'\" - '+str(detail),'error')
+            exit()
+    
+    #----------------------------------------------------------------------
+    def saveLocalPage(self, content, filename):
+        """Saves content locally as a file named filename"""
+        
+        try:
+            sock=open(filename,'w')
+            sock.write(content)
+            sock.close()
+        
+        except Exception, detail:
+            self.writeLog('saving file \"'+filename+'\" - '+str(detail),'error')
+            exit()
+
+            
+    #----------------------------------------------------------------------
+    def localPageName(self, req):
+        """Return a string to be used as a file name, based on req, for the local files used if globals.DEV_MODE is set"""
+
+        validchars='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.^+%&'
+        
+        name=req.get_full_url()+req.data+'.html'      
+        strippedname=''.join(c for c in name if c in validchars)
+        
+        fullpath=os.path.join(globals.DEV_MODE_DIR, strippedname)
+
+        return fullpath
+    
+    #----------------------------------------------------------------------
+    def querySearchEngine(self, req):
+        """Query the search engine for show episodes. If DEV_MODE='offline', query is done on local files instead of 
+        the online search engine. This is for convenience on debugging/developing.Refer to globals.DEVEL_MODE for details """
+               
+        #in DEV_MODE, define the name of local files, using data from "req" info to have unique name for each query
+        if globals.DEV_MODE: 
+            name=self.localPageName(req)
+
+        try:
+            
+            #if in DEV_MODE='offline', open pages from local files, otherwise, query the search engines online
+            if globals.DEV_MODE=='offline': 
+                html=self.openPage(req, filename=name)                
+            else:
+                html=self.openPage(req)
+                            
+        except Exception, details:
+            
+            if globals.DEV_MODE=='offline':
+                self.writeLog('opening search page from local file \"'+name+'\" :'+str(details),'error')               
+            else:
+                self.writeLog('querying the search engine :'+str(details),'error')               
+            exit()                    
+            
+        return html
+
+    
+    #----------------------------------------------------------------------
+    def stripOlderEpisodes(self, lastexisting=None, list=None):
+        """ Deletes episodes older than or equal to (episode id smaller than or equal to) "latestexisting" from episode list """
+        
+        videoidlist=[videoid_elem.text for videoid_elem in list.getiterator(globals.EL_EPISODEID)]      
+        deletelist=videoidlist[videoidlist.index(lastexisting):]
+        
+        #delete elements which have their globals.EL_EPISODEID.text in deletelist         
+        for elem in list.getiterator(globals.EL_EPISODEDETAILS):
+            
+            if elem.find(globals.EL_EPISODEID).text in deletelist:
+                list.remove(elem)
+                
+        return list
+
+    
+    #----------------------------------------------------------------------
+    def checkExistingEpisodes(self, lastexisting=None, list=None):
+        """ Checks if the "lastexisting" id string is in the episode list "list", returning true if found"""
+        
+        idlist=[idelem.text for idelem in list.getiterator(globals.EL_EPISODEID)]
+
+        if oldestneeded in idlist:
+            return 1
+        else:
+            return   
+
       
     #----------------------------------------------------------------------
     def searchEpisodes(self):
-        """Main search loop, iterates through the show tags in input tree, fetching the search results, storing them back in input tree. 
-        The search loop will proceed untill the "oldest needed"  episde is reched - check checkLastDownloads() for info - or all searc results page were parsed."""
-        
-        
-        #----------------------------------------------------------------------
-        def querySearchEngine(show, page):
-            """Query the search engine for show episodes. If DEV_MODE is activated, this can instead get results from local files, and 
-            save online found results as local files. This is for convenience on debugging/developing.Refer to globals.DEVEL_MODE for details """
-            
-            showname=show.find(globals.EL_SHOWNAME).text
-    
-            #Submit search query. DEVEL_MODE allows diferent ways to do it.
-            try:
-                if globals.DEV_MODE=='download':
-                    html=self.openPage()
-                    filename=os.path.join(globals.DEV_MODE_DIR,'Search_'+showname+'_'+str(page)+'.html')
-                    self.exportSearchResults(html, filename)
-    
-                elif globals.DEV_MODE=='offline':
-                    filename=os.path.join(globals.DEV_MODE_DIR,'Search_'+showname+'_'+str(page)+'.html')
-                    html=self.openPage(filename)
-    
-                else:
-                    html=self.openPage()
-                    
-            except Exception, details:
-                self.writeLog('searching episodes for '+showname+' page '+str(page)+' :'+str(details),'error')
-                exit()                    
-                
-            return html
-
-        
-        #----------------------------------------------------------------------
-        def stripOlderEpisodes(oldestneeded=None, list=None):
-            """ Deletes elements older (smaller id) than "oldesteneeded" from element list "list" """
-            idlist=[idelem.text for idelem in list.getiterator(globals.EL_EPISODEID)]      
-            deletelist=idlist[idlist.index(oldestneeded):]
-            
-            for elem in list.getiterator(globals.EL_EPISODEDETAILS):
-                if elem.find(globals.EL_EPISODEID).text in deletelist:
-                    list.remove(elem)
-            return list
-
-        
-        #----------------------------------------------------------------------
-        def checkExistingEpisodes(oldestneeded=None, list=None):
-            """ Checks if the "oldestneeded" id string is in the episode list "list", returning true if found"""
-            
-            idlist=[idelem.text for idelem in list.getiterator(globals.EL_EPISODEID)]
-
-            if oldestneeded in idlist:
-                return 1
-            
-            else:
-                return
-        
-
-        #----------------------------------------------------------------------
-        def parsePagesFound(html):
-            """returns the number of pages found in each show's search results"""
-    
-            #<li class=segundo> is the tag holding number of episodes info
-            trainer = SoupStrainer('li', { 'class' : 'segundo' })            
-            list=[tag for tag in BeautifulSoup(html, parseOnlyThese=trainer)]
-            
-            numpages=''
-            
-            #If matches are returned, then episodes were found, parses information about number of episodes and pages
-            if len(list):
-                
-                #numepisodes is nested in the 3rd <sttong> tag inside <li class=segundo> tag. 
-                numepisodes=tag.findAll('strong')[2].string
-                                    
-                #episodesperpage is the 2nd <strong> tag.
-                episodesperpage=int(tag.findAll('strong')[1].string)
-                
-                #Number of pages.
-                numpages=str(int(math.ceil(float(numepisodes)/float(episodesperpage))))
-                                                            
-            return numpages
-        
-  
-        #----------------------------------------------------------------------
-        def parseSearchResultsPage(html):
-            """Parse the search result pages matching information about the episodes. Information found is inserted into self.inputtree"""
-            
-            #using BeautifulSoup for mathing the html. For speed, parsing is done only on the chosen tags, by using SoupStrainer 
-            #before the call to BeautifulSoup. Episode title, description and url information are stored all together 
-            #in <div class=conteudo-texto> tags in the html code
-            trainer = SoupStrainer('div', {'class':'conteudo-texto'})
-            soup=BeautifulSoup(html, parseOnlyThese=trainer)            
-            
-            #element to hold the list of episodes found
-            episodeslist=ET.Element(globals.EL_EPISODELIST)
-            
-            #for each <div class=conteudo-texto> tag, matches and store the relevant info
-            for tag in soup.contents:
-                
-                #subelement to hold episode details
-                episodedetails=ET.SubElement(episodeslist,globals.EL_EPISODEDETAILS)
-                
-                #match the episode title and store it as subelement of episodetails
-                ET.SubElement(episodedetails,globals.EL_EPISODETITLE).text=tag.h2.a['title']
-                
-                #match the episode url and store it as subelement of episodetails
-                ET.SubElement(episodedetails,globals.EL_EPISODEURL).text=tag.h2.a['href']
-                
-                #match episode id out of the episode url, and store it as subelement of episodetails
-                matchstr='http\S*GIM(\d{6})\S*html'    
-                pattern=re.compile(matchstr)
-                match=pattern.findall(tag.h2.a['href'])
-                ET.SubElement(episodedetails,globals.EL_EPISODEID).text=match[0]                
-        
-                #match episode description and store it as subelement of episodetails. The whole "contents" field of the tag is retrieved, as there 
-                #may be sub tags inside the <p> tag
-                description=''
-                for piece in tag.p.contents:
-                    description+=piece.string 
-                ET.SubElement(episodedetails,globals.EL_EPISODEDESCRIPTION).text=description
-            
-            #episodes durations are stored in <span class="tempo"> tags in the html code
-            trainer = SoupStrainer('span', {'class':'tempo'})
-            soup=BeautifulSoup(html, parseOnlyThese=trainer)
-                
-            #we need to iterate through the already existing episodedetails elements and insert the duration as subelement to each.
-            iterator=episodeslist.getiterator(globals.EL_EPISODEDETAILS)       
-            for index,tag in enumerate(soup):
-                ET.SubElement(iterator[index],globals.EL_EPISODEDURATION).text=tag.string       
-                    
-            #episodes dates are stored in <td class="coluna-data"> tags in the html code
-            trainer = SoupStrainer('td', {'class':'coluna-data'})
-            soup=BeautifulSoup(html, parseOnlyThese=trainer)
-    
-            #we need to iterate through the already existing episodedetails elements and insert the duration as subelement to each.
-            iterator=episodeslist.getiterator(globals.EL_EPISODEDETAILS)       
-            for index,tag in enumerate(soup):
-                ET.SubElement(iterator[index],globals.EL_EPISODEDATE).text=tag.string       
-                
-            return episodeslist
-
-        
-        
+        """Main search loop, iterates through the show tags in input tree, fetching the search results, storing 
+        them back in input tree. The search loop will proceed untill the "last existing"  episode is 
+        reached - check checkLastDownloads() for info - or till all search results page were parsed."""
         
         
         for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):
             
-            showname=show.find(globals.EL_SHOWNAME).text.encode(globals.ENC_LOCAL)
+            showname=show.find(globals.EL_SHOWNAME).text
            
-            #there will always at least one result page, even if no episodes are found. We set the element holding the number of pages
-            #fount to 1. It will be updated later with the number of pages returned by the search
+            #there will always at least one result page, so element holding the number of pages is set initially to 1. 
             ET.SubElement(show,globals.EL_NUMPAGES).text='1'
             
-            #preparing the query which will be submitted to the seach enginge, inserting the values of serch filters and search string
+            #preparing the query for the seach enginge
             globals.SEARCH_QUERY[globals.SEARCHFILTERKEY]=show.find(globals.EL_SEARCHFILTER).text.encode(globals.ENC_UTF)
             globals.SEARCH_QUERY[globals.SEARCHSTRKEY]=show.find(globals.EL_SEARCHSTR).text.encode(globals.ENC_UTF)
             
-            #let us start the search, and let the log know it
+            #let the log know what we are about to do
             if show.find(globals.EL_OLDEST).text:
                 self.writeLog('Show "'+showname+'"'+': searching for episodes newer than '+show.find(globals.EL_OLDEST).text,'message')
             else:
                 self.writeLog('Show "'+showname+'"'+': searching for all new episodes','message')
             
-            #page counter when looping through results with several pages
+            #page counter when looping through results
             page=1
             foundOldestNeeded=0
             
             #main search loop
             while page<=int(show.find(globals.EL_NUMPAGES).text) and not foundOldestNeeded: 
 
-                #we tell log what we are doing
+                #a little more chat with the log
                 self.writeLog('Show "'+showname+'"'+': Parsing search results page '+str(page),'message')
 
                 #last item to be inserted on the search query is the search page number
                 globals.SEARCH_QUERY[globals.PAGEKEY]=str(page)
                 
-                #query the search engine for the given show and page
-                html=querySearchEngine(show,page)
                 
-                #if we are in the first page, check whether any video was found, and if found, get info about the number of episodes
+                #encode the request
+                req = urllib2.Request(globals.SEARCH_ENGINE_URL, urllib.urlencode(globals.SEARCH_QUERY), globals.SEARCH_HEADERS)
+                
+                #submit the query to the search engine
+                html=self.querySearchEngine(req)
+                
+                #download the search results in case if in DEV_MODE
+                if globals.DEV_MODE=='download': self.saveLocalPage(html, self.localPageName(req))
+                
+                #for first page, store the number of pages to be parsed in the main tree
                 if page==1: 
-                    show.find(globals.EL_NUMPAGES).text=parsePagesFound(html)
+                    show.find(globals.EL_NUMPAGES).text=self.parseEpisodeSearch_numpages(html)
                 
-                #parse the results into a list of episodes, of ET.Element type
-                episodelist=parseSearchResultsPage(html)
+                #parse the results into a ElementTree element containing details about the episodes
+                episodelist=self.parseEpisodeSearch(html)
                 
-                #if episodes exist in disk, check if the downloaded episode list reached the oldest existing episodes in disk. 
+                #if episodes exist in disk, check if the downloaded episode list reached the last existing episodes in disk. 
                 if (show.find(globals.EL_OLDEST).text):
                     
-                    foundOldestNeeded=checkExistingEpisodes(oldestneeded=show.find(globals.EL_OLDEST).text, list=episodelist)
+                    foundOldestNeeded=self.checkExistingEpisodes(lastexisting=show.find(globals.EL_OLDEST).text, list=episodelist)
                     
-                    #if found oldest needed, strip all element older than it
+                    #if found last exsiting, strip all elements older than it
                     if foundOldestNeeded:
-                        episodelist=stripOlderEpisodes(oldestneeded=show.find(globals.EL_OLDEST).text, list=episodelist)
+                        episodelist=self.stripOlderEpisodes(lastexisting=show.find(globals.EL_OLDEST).text, list=episodelist)
                         
                 show.append(episodelist)
-
                 page+=1
            
             #if no results were found, write warning to log
             if show.find(globals.EL_NUMPAGES).text=='':
                 self.writeLog('Show "'+showname+'"'+': search results have no match','warning')
 
+                
+            
+    #----------------------------------------------------------------------                
+    def parseVideoPage(self, videoid):
+        """Parses the video page (globals.PLAYER_URL+<movie id>), return Element containing the direct url flash
+        video URLs, as well as thumbnail URL
+        """
+        url=globals.PLAYER_URL+videoid
+        req = urllib2.Request(url , None, globals.SEARCH_HEADERS)
+        sock = urllib2.urlopen(req)
+        html=sock.read()
+        sock.close()
+        
+        return html
+        
+        
+    #----------------------------------------------------------------------                
+    def downloadEpisodes(self):
+        """Parses the inputtree, downloading the episodes as specified (movies, playlists)
+        """
+        
+        for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):
+            
+            for episode in show.getiterator(globals.EL_EPISODEDETAILS):
+                
+                title=episode.find(globals.EL_EPISODETITLE).text
+                videoid=episode.find(globals.EL_EPISODEID).text
+                url=episode.find(globals.EL_EPISODEURL).text
+                
+                data=self.parseVideoPage(videoid)
+            
+            
+            
+        
 ########################################################################  
 
 
 
 if __name__ == "__main__":
     
-    crawler=plim_plim(globals.INPUT_FILE)
+    crawler=plimplim(globals.INPUT_FILE)
+    
     crawler.searchEpisodes()
-    #crawler.downloadEpisodes() AQUIAQUIAQUI
+
+    #crawler.downloadEpisodes()
+
     crawler.inputtree.write('output.xml',globals.ENC_LOCAL)
     exit()
     
