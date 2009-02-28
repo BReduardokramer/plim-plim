@@ -4,7 +4,7 @@ import os
 ##############################################
 # Globo.com account information
 USER_ID='ricardobonon@gmail.com'
-USER_PWD='fl10nqsklg'
+USER_PWD='arsers68'
 
 ##############################################
 # Log information
@@ -19,7 +19,7 @@ LOG_FILE='plimp-lim.log'
 INPUT_FILE           = 'input.xml'
 
 ##############################################
-# Encoding Settings
+# Character Encoding Settings
 #Encoding for input/output XML files
 ENC_LOCAL     = 'iso-8859-1' 
 #Encoding for interfacing with Globo's search engines
@@ -29,13 +29,13 @@ ENC_UTF       = 'utf-8'
 # Globo HTTP Parameters and URLs
 
 #This can be any valid Globo.com Video ID for performing the authentication 
-#(Video ID is the number after the text GIM in URLs of Globo.com videos
+#(Video ID is the number after the string GIM in URLs of Globo.com videos
 AUTH_VIDEOID=str('842866')
 
 #Direct URL for Globo's Flash video player
 PLAYER_URL='http://playervideo.globo.com/webmedia/GMCPlayListASX?flash=true&midiaId='
 
-#URL for authenticating login info and cookie setting
+#URL for performing login and cookie setting
 LOGIN_URL='http://playervideo.globo.com/webmedia/player/GMCLogin'
 
 #Body of HTTP request to Globo's authentication engine
@@ -70,7 +70,7 @@ SEARCH_HEADERS = {'Content-type': 'application/x-www-form-urlencoded',\
                  'Keep-Alive':' 300',\
                  'Connection':' keep-alive'}
 
-#Dictionary for search queries. Empty values are filled in in run-time with show information read from input file
+#Dictionary for search queries. Empty values are filled in run-time with show information read from input file
 NEWSEARCHKEY='novaBusca'
 SEARCHSTRKEY='b'
 SEARCHFILTERKEY='f'
@@ -143,7 +143,7 @@ EL_EPISODEDATE='date'
 ##############################################
 # Flags to change the behaviour of the script for convenience on development/debug
 #
-# DEVEL_MODE= 'download' -> script queries the search engine online, downloading the html pages found to the local disk, then proceed
+# DEVEL_MODE= 'download' -> script queries the search engine online, and downloads the html pages found to the local disk, then proceed
 # DEVEL_MODE= 'offline'  -> script imports the search results from local html files, instead of querying the online search engine
 # DEVEL_MODE= ''         -> script queries the search engine online, and do not save html files (this is the normal user mode)
 #

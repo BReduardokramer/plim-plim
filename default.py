@@ -4,8 +4,8 @@
 import os, datetime, cookielib, urllib, urllib2, re, sys, math
 
 #Local resources imports
-BASE_RESOURCE_PATH = os.path.join( os.getcwd().replace( ";", "" ), "resources" )
-sys.path.append( os.path.join( BASE_RESOURCE_PATH, "lib" ) )
+BASE_RESOURCE_PATH = os.path.join(os.getcwd().replace( ";", "" ), "resources" )
+sys.path.append(os.path.join( BASE_RESOURCE_PATH, "lib" ) )
 import ElementTree as ET
 from BeautifulSoup import BeautifulSoup, SoupStrainer
 import globals
@@ -27,7 +27,7 @@ class plimplim():
         self.checkLastDownloads()
         
     #----------------------------------------------------------------------
-    def writeLog(self, logstr,type):
+    def writeLog(self, logstr, type):
         
         """Outputs Error information to log file"""
         
@@ -135,7 +135,7 @@ class plimplim():
                     self.writeLog('parsing '+self.inputfile+': '+'bad elements on input file, duplicate element <'+elem+'>','error')        
                     
 
-            #if a mandatory show element is missing, exits logging error 
+            #if a mandatory show element is missing or duplicate, exits logging error 
             for elem in globals.ELS_MANDATORY:
                 if InputShowElements.count(elem)==0:
                     self.writeLog('parsing '+self.inputfile+': '+'bad elements on input file, missing mandatory element <'+elem+'>','error')        
@@ -163,7 +163,7 @@ class plimplim():
             for elem in IgnoredElements:
                 self.writeLog('parsing '+self.inputfile+': '+'unknown element <'+elem+'> will be ignored','warning')
 
-        #If it comes till here, then all may be well, output message         
+        #if it reaches here, then all may be well, output message         
         self.writeLog('parsing '+self.inputfile+': '+'successfully parsed input information','message')
         
         
@@ -179,7 +179,7 @@ class plimplim():
                 
                 path=elem.text.encode(globals.ENC_LOCAL)
                 
-                #in case the path does not exists, creates a new directory, handling exceptions
+                #in case the path does not exists, creates a new directory, handling exceptions and exiting in case of errors
                 if not os.path.isdir(path):
                     try:
                         os.makedirs(path)
@@ -195,17 +195,17 @@ class plimplim():
         """For each show, finds the id (globo.com video id) of the newset episode existing in the download 
         directory. This id is inserted as sub element of the show elements in self.inputtree to be 
         used later. At the end, the oldest of these ids is stored as globals.EL_OLDEST in the input tree. This
-        will be used later for stop the searching once all updated shows have been found"""
+        will be used later for stop the searching for new episodes"""
         
         #iterating per show
         for show in self.inputtree.getroot().getiterator(globals.EL_SHOW):
             
             newest_episodes_found=[]
 
-            #finds occurrence of any download element
+            #for each occurrence of any possible download element
             for download_element in globals.ELS_DOWNLOAD:
 
-                #check only for existing elements
+                #check actually existing elements
                 if show.find(download_element)<>None:      
                     
                     showname=show.find(globals.EL_SHOWNAME).text
@@ -240,6 +240,7 @@ class plimplim():
                         self.writeLog('Show "'+showname+'"'+': no existing episode found in \"'+downloaddir+'\"','message')
                 
             #Store in input tree the oldest of the newest existing episode found in disk.
+            # HERE: a change is needed. For each download, a last existing episode should be stored, instead of the oldest newest
             if len(newest_episodes_found):
                 newest_episodes_found.sort()
                 ET.SubElement(show, globals.EL_OLDEST).text=str(newest_episodes_found[0])
